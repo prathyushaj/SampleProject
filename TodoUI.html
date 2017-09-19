@@ -1,0 +1,166 @@
+<html>
+<head>
+<title>Todo Manager</title>
+
+<script type="text/javascript" src="jquery-3.2.1.js"></script>
+<script type="text/javascript" src="jquery-ui-1.12.1.min.js"></script>
+<script type="text/javascript" src="bootstrap.min.js"></script>
+<link rel="stylesheet" href="bootstrap.min.css">
+<link rel="stylesheet" href="jquery-ui-1.12.1.css">
+<link rel="stylesheet" href="todo.css">
+</head>
+
+<body>
+
+<script type="text/javascript">
+
+$(document).ready(function(){
+	$("#deadline").datepicker();
+	
+	getTasks();
+
+
+});
+
+function getTasks(){
+	$.ajax({
+		  url: "http://localhost:8080/TaskManager/Gettasks",
+		  method: "GET",
+		  contentType: "application/json; charset=utf-8",
+		  datatype: "json"
+		}).done(function(data) {
+			data = JSON.parse(data);
+		  for(var task in data){
+			var taskDetails = data[task];
+			addTaskHtmlRow(taskDetails.taskName, taskDetails.description, taskDetails.deadline, taskDetails.isCompleted, taskDetails.details);
+		  }
+		}).fail(function () {
+			alert("Failed to get todo list");
+		});
+}
+
+function addTask(){
+
+	var taskName = $('#taskName').val();
+	var description = $('#taskDescription').val();
+	var deadlineDate = new Date($('#deadline').val());
+	var taskDetails = $('#taskDetails').val();
+	
+	var data = {};
+    data["description"] = description;
+    data["isCompleted"] = false;
+    data["details"] = taskDetails;
+    data["taskName"] = taskName;
+	data["deadline"] = deadlineDate;
+	$.ajax({
+		  url: "http://localhost:8080/TaskManager/Addtask",
+		  data: JSON.stringify(data),
+		  method: "POST",
+		  contentType: "application/json; charset=utf-8",
+		  datatype: "json"
+		}).done(function(data) {
+		  if(data){
+			addTaskHtmlRow(taskName, description, deadlineDate, false, taskDetails);
+		  }else{
+			alert("Failed to Add task");
+		  }
+		}).fail(function () {
+			alert("Failed to Add task");
+		});
+				
+		$('#addTaskModal').modal('hide');
+}
+
+function deleteTask(row){
+	var taskName = $(row).parent().attr("taskname");
+	$.ajax({
+	  url: "http://localhost:8080/TaskManager/Deletetasks",
+	  data: taskName,
+	  method: "POST",
+	  contentType: "application/json; charset=utf-8",
+	  datatype: "json"
+	}).done(function(data) {
+	  if(data){
+		$(row).parent().parent().remove();			
+	  }else{
+		alert("Failed to Remove task");
+	  }
+	}).fail(function () {
+		alert("Failed to Remove task");
+	});
+}
+
+function addTaskHtmlRow(name, description, date, isCompleted, details){
+	var deleteHtmlRow = "<a href='#' onclick='deleteTask(this)'> Delete </a>";
+	var isRowHighlight="";
+	if(isCompleted){
+		isRowHighlight = "class = 'highlight'";
+	}
+	var htmlRow = '<tr '+isRowHighlight+'><td>'+name+'</td><td>'+description+'</td><td>'+date+'</td><td>'+isCompleted+'</td><td>'+details+'</td><td taskname=\''+name+'\'>'+deleteHtmlRow+'</td><tr>';
+	$('#todolisttable').append(htmlRow);
+}
+
+function addTodoBtn(){
+	$('#taskName').val('');
+	$('#taskDescription').val('');
+	$('#deadline').val('');
+	$('#taskDetails').val('');
+	$('#addTaskModal').modal();
+}
+
+</script>
+
+<h2> My Todo List </h2>
+<div>
+<button type="button" id="addTask" onclick="addTodoBtn()" class="btn">Add Todo</button>
+<table class="table">
+	<thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Deadline</th>
+		<th>Is Completed</th>
+		<th>More Details</th>
+      </tr>
+	</thead>
+	<tbody id="todolisttable">
+	</tbody>
+</table>
+
+<div class="modal fade" id="addTaskModal">
+<form role="form">
+	<div class="modal-dialog">
+	<div class="modal-content">
+	<div class="modal-header" style="background-color:#43789E;">
+		<button type="button" class="close" data-dismiss="modal" style="color:white !important;">&times;</button>
+		<h4 class="modal-title" style="color:white;">Add a TODO</h4>
+	</div>
+		<div class="modal-body">
+			<div class="form-group">
+				<label>Name</label>
+				<input type="text" id="taskName" />
+			</div>
+			<div class="form-group">
+				<label>Description</label>
+				<input type="text" id="taskDescription" />
+			</div>
+			<div class="form-group">
+				<label>Deadline</label>
+				<input type="text" id="deadline">
+			</div>
+			<div class="form-group">
+				<label>More Details</label>
+				<textarea id="taskDetails"></textarea>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-primary" onclick="addTask()">Add</button>
+				<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+			</div>
+		</div>
+		</div>
+	</div>
+</form>
+</div>
+
+</body>
+</html>
